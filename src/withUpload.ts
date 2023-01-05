@@ -37,42 +37,33 @@ export function withFileUpload<
 ) {
   return async (req: NextApiRequest, res: ResponseGeneric) => {
     const config = { ...DEFAULT_OPTIONS, ...options };
-    if (!config.allowedMethods?.includes(req.method as HTTP_METHOD)) {
-      res.status(405).end();
-      return;
-    }
-    try {
-      // If req.body is set, it means that next.js parsed the body already
-      if (req.body) {
-        throw new Error(
-          'Invalid config. Please export the config as the variable `const`'
-        );
-      }
-      const { files, fields } = await parseForm(req, config.formidableOptions);
-      Object.defineProperty(req, 'files', {
-        value: files,
-        writable: false
-      });
-      Object.defineProperty(req, 'fields', {
-        value: fields,
-        writable: false
-      });
-      if (files.length > 0) {
-        Object.defineProperty(req, 'file', {
-          value: files[0],
-          writable: false
-        });
-      }
-      await handler(
-        req as RequestGeneric,
-        res
+    // If req.body is set, it means that next.js parsed the body already
+    if (req.body) {
+      throw new Error(
+        'Invalid config. Please export the config as the variable `const`'
       );
-      if (config.cleanupFiles) {
-        await Promise.all(files.map(file => file.destroy()));
-      }
-    } catch (e) {
-      console.error(e);
-      res.status(500).end();
+    }
+    const { files, fields } = await parseForm(req, config.formidableOptions);
+    Object.defineProperty(req, 'files', {
+      value: files,
+      writable: false
+    });
+    Object.defineProperty(req, 'fields', {
+      value: fields,
+      writable: false
+    });
+    if (files.length > 0) {
+      Object.defineProperty(req, 'file', {
+        value: files[0],
+        writable: false
+      });
+    }
+    await handler(
+      req as RequestGeneric,
+      res
+    );
+    if (config.cleanupFiles) {
+      await Promise.all(files.map(file => file.destroy()));
     }
   };
 }
